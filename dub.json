@@ -12,7 +12,7 @@
             "excludedSourceFiles": [ "source/stdcpp/test/*" ]
         },
         {
-            "name": "unittest",
-        },
+            "name": "unittest"
+        }
     ]
 }
