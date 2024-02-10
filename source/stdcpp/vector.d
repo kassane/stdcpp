@@ -23,17 +23,14 @@ module stdcpp.vector;
 
 import stdcpp.allocator;
 
-version(CppRuntime_Gcc)
-    version = Non_microsoft;
-else version(CppRuntime_Clang)
-    version = Non_microsoft;
+import stdcpp.xutility : StdNamespace;
 
 enum DefaultConstruct { value }
 
 /// Constructor argument for default construction
 enum Default = DefaultConstruct();
 
-extern(C++, "std"):
+extern(C++, (StdNamespace)):
 
 alias vector(T) = vector!(T, allocator!T);
 extern(C++, class) struct vector(T, Alloc)
@@ -201,6 +198,12 @@ extern(D):
         inout(T)[] as_array() inout pure nothrow @trusted @nogc             { return _Get_data()._Myfirst[0 .. size()]; }
         ///
         ref inout(T) at(size_type i) inout pure nothrow @trusted @nogc      { return _Get_data()._Myfirst[0 .. size()][i]; }
+
+        ///
+        void push_back(U)(auto ref U element)
+        {
+            emplace_back(forward!element);
+        }
 
         ///
         void push_back(U)(auto ref U element)
@@ -758,7 +761,7 @@ extern(D):
         inout(T)[] as_array() inout pure nothrow @trusted @nogc             { return null; }
         ref inout(T) at(size_type i) inout pure nothrow @trusted @nogc      { data()[0]; }
     }
-    else version (Non_microsoft)
+    else version (CppRuntime_Gcc)
     {
         pointer _M_start;
         pointer _M_finish;
@@ -837,6 +840,74 @@ extern(D):
         extern(C++) pointer begin() nothrow;
 
         extern(C++) pointer end() nothrow;
+    }
+    else version (CppRuntime_Clang)
+    {
+        pointer __begin_ =  null;
+        pointer __end_ = null;
+        auto __end_cap_ = __compressed_pair!(pointer, allocator_type)(null, __default_init_tag());
+
+        inout(T)[] as_array() inout pure nothrow @trusted @nogc         {return this.__begin_[0 .. size()];}
+
+        inout(value_type)* data() inout nothrow
+        {
+            return this.__begin_;
+        }
+
+        ref inout(pointer) __end_cap() inout nothrow
+        {
+            return this.__end_cap_.first();
+        }
+
+        ///vector(n) constructor
+        extern(C++) this(size_t __n);
+
+        ///copy constructor
+        extern(C++) this(ref const vector vec);
+
+        ///vector(n, value) constructor
+        extern(C++) this(size_t __n, const ref T value);
+
+        extern(D) this(size_t n, const T item)
+        {
+            this(n, item);
+        }
+
+        ///
+        extern(C++) size_type max_size() const nothrow;
+        ///
+        extern(C++) size_t capacity() const @safe nothrow pure @nogc
+        {
+            return cast(size_type)(__end_cap() - this.__begin_);
+        }
+        ///
+        ref inout(T) at(size_t __n) inout pure nothrow @nogc            {return this.__begin_[0 .. size()][__n];}
+
+        ///
+        size_t size() const pure nothrow @safe @nogc
+        {
+            return size_type(this.__end_ - this.__begin_);
+        }
+
+        ///
+        bool empty() const nothrow
+        {
+            return this.__begin_ == this.__end_;
+        }
+
+        ///
+        extern(C++) void reserve(size_t __n);
+        ///
+        extern(C++) void resize(size_t __n);
+
+        extern(C++) void assign(size_t __n, ref const T __x);
+        ///
+        extern(D) void assign(size_t n, const T x)
+        {
+            return this.assign(n,x);
+        }
+        ///
+        extern(C++) void swap(ref vector x);
     }
 }
 
@@ -931,4 +1002,10 @@ version (CppRuntime_Microsoft)
             _Myvec.pointer _Ptr;
         }
     }
+}
+else version (CppRuntime_Clang)
+{
+    import stdcpp.xutility : __compressed_pair;
+    // an auxiliary struct for inittialization of compressed_pair
+    extern (C++) struct __default_init_tag{}
 }
