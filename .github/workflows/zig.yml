@@ -1,0 +1,27 @@
+name: zig tests
+
+on: [push]
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        runs-on: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.runs-on }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: mlugg/setup-zig@v1
+        with:
+          version: master
+      - uses: dlang-community/setup-dlang@v2
+        with:
+          compiler: ldc-master
+
+      - name: (Zig) Build
+        run: |
+          zig build --summary all -freference-trace --verbose
+          zig build test-list
+          zig build test-set
+          zig build test-string
+          zig build test-vector

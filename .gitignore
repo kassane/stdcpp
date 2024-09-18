@@ -12,3 +12,4 @@ stdcpp-test-*
 *.obj
 *.dylib
 *.lst
+*zig-*
